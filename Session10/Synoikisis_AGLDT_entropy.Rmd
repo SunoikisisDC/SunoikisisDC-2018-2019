@@ -1,0 +1,641 @@
+---
+title: "Dependency direction entropy from AGLDT XML"
+output: html_notebook
+---
+
+
+### The data
+
+Several AGLDT files have been provided as input for this exercise. The files are available at https://github.com/rgorman/synoikisis/tree/master/input_data
+
+
+### The R script
+The R code to compute dependency-direction entropy are given below in executable blocks. Brief explanations are also provided.
+
+
+***
+***
+
+
+### Packages
+Several R packages are necessary for this code. These are available at the CRAN sites.  They must be activated for the current session using the **require()** or **library()** function.
+
+
+```{r}
+
+require(xml2)
+require(dplyr)
+require(stringr)
+require(magrittr)
+require(entropy)
+
+```
+
+* **xml2** is a somewhat simpler version of the XML package. It is useful for extracting data from XML files.
+* **dplyr** is "a grammar of data manipulation." It allows easier handling of tabular data.
+* **stringr** is a package supporting character manipulation. It facilitates dealing with text strings.
+* **magrittr** provides an easy to use "pipe-like operator" and supporting functions for help in writing readable code.
+* **entropy** is a package for calculating informational entropy.
+
+***
+***
+
+
+### Loading the treebank files
+
+```{r}
+
+input.dir <- "../input_data/" # sets this directory holding treebank files. This code must be adjusted to reflect your own directory structure.
+
+files.v <- dir(path=input.dir, pattern=".*xml") # A vector with names of each XML file  from input directory.
+
+doc.xml <- read_xml(file.path(input.dir, files.v[1]))
+
+```
+
+* **input.dir <- "."** This code assumes that the working directory is set to the location of the treebank files. If this is not the case, the code should be adjusted to reflect your own directory structure.
+
+* The **dir()** function will produce a character vector of the names of files in the named directory. The argument **pattern= etc.** will restrict the output to XML files.
+
+* The **files.v** vector can be used to loop through all treebank files in a directory. We will not use this loop in this demo, but will handle the files individually for pedagogical purposes.
+
+* The **read_xml()** function here takes (via the **file.path()** function) a directory and file name and returns an R object, here named **doc.xml**. This object maintains the structure of the XML file. It is a good idea as quickly as possible to move the data from this XML structure (to a list or matrix, etc). XML objects can be difficult to manipulate in R. **Note that you should specify which file in the** file.v **vector that you want to work on via the subsetting function [...].**
+
+
+***
+
+### Moving from XML to tibble
+#### Extracting Sentences
+
+```{r}
+
+sent.xml <- xml_find_all(doc.xml, "//sentence")
+
+```
+
+Because of the structure of the treebank files, dependency-direcgition entropy must be figured on a sentence by sentence basis. Thus, we extract every sentence element in the doc.xml object and store the output in sent.xml
+
+**xml_find_all()** is a useful function which extracts all XML elements which match the criterion. The function's first argument is the input object. The second argument is an xpath expression identifying the nodes of interest. XPath is a syntax for defining parts of a XML document and navigating through it.
+
+
+
+#### Processing word elements
+The following process must be applied iteratively to each sentence in sent.xml. This may be done with a loop or a user-defined function. A loop is often slower but is easier for those new to R. We will use a loop here, **but first we will lay out the stages involved without wrapping them in a loop. A looped version will be included later in this file.** 
+
+
+
+##### Extracting word attributes
+
+
+```{r}
+
+word.l <- sent.xml[[1]] %>%
+  xml_find_all("word") %>%
+  xml_attrs()
+
+```
+
+This code extracts the attributes of each word node in the first sentence of sent.xml. The output is stored in the list word.l. 
+
+* **sent.xml[[1]] %>%  xml_find_all("word")** sends the data in the first sentence element in sent.xml to **xml_find_all()**. This function extracts all word nodes in that sentence.
+* **%>% xml_attrs()** sends the word nodes to **xml_attrs()**, which extracts all attributes in the words and outputs a named character vector for the attributes of each word. The resulting word.l is a list object with a number of elements equal to the number of words in the input sentence.
+
+
+##### From list to tibble 
+
+
+```{r}
+
+word.l <- word.l[which(lengths(word.l) == 7)]
+
+sent.workng.m <- unlist(word.l)  %>%
+  matrix(ncol = 7, byrow = TRUE)
+
+colnames(sent.workng.m) <- c("id", "form", "lemma", "postag", "relation", "head", "cite")
+
+sent.tib <-  as_tibble(sent.workng.m)
+
+sent.tib$id <- sent.tib$id %>%
+  as.numeric()
+
+sent.tib$head <- sent.tib$head %>%
+  as.numeric()
+
+
+```
+
+The annotation scheme used in the AGLDT allows the insertion of ellipses when required by grammatical structure. Because these inserted "words" do not have an actual position in the linear order of the sentence, they should not be considered when extracting data about word order. 
+
+* **word.l <- word.l[which(lengths(word.l) == 7)]** eliminates ellipsis nodes. Normal (non-ellipsis) nodes have 7 attributes. Ellipsis nodes have additional attributes. A simple way to drop the unwanted information is to apply the accessor function ([...]) to **word.l**. 
+* Within the square brackets is **lengths(word.l)**, which returns a vector with the length of the vector in each list element in **word.l**. 
+* Wrapped around **lengths()** is **which(x == 7)**. This function produces a vector giving the list element index of all those elements which contain vectors of length 7. 
+* This nesting of functions may produce a shorter version of **word.l** from which all ellipsis nodes have been dropped.
+
+* **unlist(word.l)  %>%** produces a character vector of a length equal to 7 times the number of words in **word.l** and passes it to the next line of code. This step is preliminary to creating a matrix and then a data frame (a tibble here).
+* **matrix(ncol = 7, byrow = TRUE)** produces a matrix object with 7 columns and as many rows as words in the input **word.l**.
+
+
+* **colnames(sent.workng.m) <- c("id", "form", "lemma", "postag", "relation", "head", "cite")** sets a name for each column in the matrix. Tibbles resist being created from a matrix without column names.
+
+* **sent.tib <-  as_tibble(sent.workng.m)** creates a tibble from the matrix. Tibbles are easier to work with and manipulate.
+
+
+* In the remaining code in this block, the **as.numeric()** function changes the content of the columns indicated from character strings to numbers. **read_xml()** seems to output the values of all elements and attributes as text. 
+
+
+### Computing Dependency Direction
+
+
+
+```{r}
+
+sent.tib <- sent.tib %>%
+  mutate(arc_direction = NA)
+
+sent.tib <- sent.tib[- which(str_detect(sent.tib$relation, "Aux[xkgXKG]") == TRUE) , ]
+
+for (j in seq_len(nrow(sent.tib))) {
+  
+  if (is.numeric(sent.tib$head[j]) ) {
+    
+    if (sent.tib$head[j] %>%
+        is_in( sent.tib$id)) {
+      
+      
+      if (sent.tib$id[j] < sent.tib$head[j]) {sent.tib$arc_direction[j] <- "parent_follows"}
+      if (sent.tib$id[j] > sent.tib$head[j]) {sent.tib$arc_direction[j] <- "parent_precedes"}
+      
+      
+    }
+  }
+  
+}
+
+
+```
+
+
+
+
+* **sent.tib <- sent.tib %>% mutate(arc_direction = NA)** adds a column called "arc_direction" to **sent.tib** and populates that column with the logical value *NA*. Code calculating the values for each cell in the new column could be included as an argument to **mutate()**. Here, the relevant code is separated from **mutate()** to make it easier to read.
+* **sent.tib <- sent.tib[- which(str_detect(sent.tib_dollar_relation, "Aux[xkgXKG]") == TRUE) , ]** removes rows representing unused punctuation tokens from **sent.tib**. 
+  * **str_detect(string, pattern)** matches the specified pattern in the input string. Here the input string is the value of the **relation** column for each row of **sent.tib**. The pattern is a RegEx expression to identify punctuation marks which will not have dependencies: AuxX, AuxK, and AuxG. The AGLDT annotation scheme allows punctuation to have dependencies, but in this case the punctuation will be annotated with either the COORD or APOS relationship label.
+  * **which(str_detect(sent.tib_dollar_relation, "Aux[xkgXKG]") == TRUE)** returns the index number of the appropriate rows.
+  * **<- sent.tib[- ... , ]**: only data from the specified rows are assigned to **sent.tib**, effectively dropping unwanted data. Note that the minus sign preceding the **which()** function selects the rows for which the following criterion is NOT applicable.
+  
+* The **for()** loop iterates through the rows of **sent.tib** and inserts values in the "arc_direction" column. **seq_len(nrow(sent.tib))** returns an integer vector beginning with 1 and ending with the number of rows in **sent.tib**. This output allows row-by-row manipulation of the input tibble. 
+* The **if (is.numeric(sent.tib_dollar_head[j]) )** condition prevents the code from breaking when there is an annotation error and some token in a sentence has not been assigned a *head* value. If the criterion is not met, the rest of the loop is bypassed. 
+* The **if (sent.tib_dollar_head[j] %>% is_in(sent.tib_dollar_id))** condition drops from the loop tokens which are dependent on a supplied ellipsis token. All ellipsis nodes themselves have been dropped from the data at a previous step of the script. The dependents of these dropped nodes still remain in the data, but should not be assigned a dependency direction. On the other hand, dependents of ellipses should not be dropped, since they do appear in the linear order of words in a sentence and, crucially, may have dependents of their own for which a dependency direction should be calculated. **sent.tib_dollar_id** generates a vector containing the "id" values for all rows, and then **is_in()** checks to see that the value of the "head" column for the target row **[j]** is an element of that vector. If the condition is TRUE, then the target word is not dependent on an ellipsis (because they have been dropped and have no corresponding "id" value), and the the token is processed. Otherwise, the rest of the loop is bypassed. 
+* The **if (sent.tib_dollar_id[j] < sent.tib_dollar_head[j]) {sent.tib_dollar_arc_direction[j] <- "parent_follows"}** condition compares the value of the target's "id" column to the value of its "head" column. An "id" value smaller than a "head" value means that the dependency parent follows the target token, so the corresponding value is assigned to the "arc_direction" column. The complementary condition is given in the next line.
+
+
+#### Rewriting part-of-speech for ease of reading
+
+
+```{r}
+
+sent.tib <- sent.tib %>%
+  mutate(part_of_speech = NA)
+
+for (k in seq_len(nrow(sent.tib))) {
+  
+  if (str_detect(sent.tib$postag[k], "^-")) {
+    
+  } else {
+    
+    if (str_detect(sent.tib$postag[k], "^[a-z]") ) {
+      
+      postag <-  str_extract(sent.tib$postag[k], "^[a-z]")
+      
+      if (postag == "v") {
+        sent.tib$part_of_speech[k] <- "verb"
+      }
+      if (postag == "n") {
+        sent.tib$part_of_speech[k] <- "noun"
+      }
+      if (postag == "p") {
+        sent.tib$part_of_speech[k] <- "pronoun"
+      }
+      if (postag == "c") {
+        sent.tib$part_of_speech[k] <- "conjunction"
+      }
+      if (postag == "d") {
+        sent.tib$part_of_speech[k] <- "adverb"
+      } 
+      if (postag == "l") {
+        sent.tib$part_of_speech[k] <- "def_article"
+      }
+      if (postag == "r") {
+        sent.tib$part_of_speech[k] <- "preposition"
+      }
+      if (postag == "a") {
+        sent.tib$part_of_speech[k] <- "adjective"
+      }
+      if (postag == "u") {
+        sent.tib$part_of_speech[k] <- "punctuation"
+      }
+      if (postag == "NA") {
+        sent.tib$part_of_speech[k] <- NA
+      }
+      
+    }
+    
+  }
+  
+}
+
+
+```
+
+* **sent.tib <- sent.tib %>% mutate(part_of_speech = NA)** creates a new column in **sent.tib** and populates it with the logical value NA
+* the condition **str_detect(sent.tib$postag[k], "^-")** checks the first character in the string in each "postag" column cell. Using the RegEx expression "^-", the condition is TRUE if the first character is a dash, indicating that no part of speech has been assigned to this token. If the condition is TRUE, the rest of the loop is skipped.
+* The condition **if (str_detect(sent.tib$postag[k], "^[a-z]") )** checks for empty "postag" cells. If the entry contains no string, the rest of the loop is skipped. This step is an *ad hoc* way to handle errors and is certainly not optimal.
+
+
+
+#### Adding data for dependency parents
+
+```{r}
+
+sent.tib <- sent.tib %>%
+  mutate(parent_POS = NA)
+
+sent.tib <- sent.tib %>%
+  mutate(parent_relation = NA)
+
+
+
+y <- sent.tib$id 
+
+for (p in seq_len(nrow(sent.tib))) {
+  
+  x <- sent.tib$head[p] 
+  
+  if (x %in% y) {
+    if (x > 0) {
+      sent.tib$parent_POS[p] <- sent.tib$part_of_speech[which(sent.tib$id == x) ]
+      sent.tib$parent_relation[p] <- sent.tib$relation[which(sent.tib$id == x) ]
+    }
+    
+  }
+}
+
+
+
+```
+
+
+Dependency-direction entropy is more useful when it can be conditioned on syntactic features of the context.  The part-of-speech and relation annotation of the parent word are among the most important of such features. This code block extracts this information and adds it to **sent.tib**.
+
+* New columns are added to the tibble and populated with NAs with the **mutate()** function, as in previous steps.
+* **y <- sent.tib$id** creates a numeric vector with all id values from **sent.tib**. Since the contents of this vector must be checked for each row in **sent.tib**, it is placed before the **for()** loop, to reduce redundancy.
+* This **for()** loop iterates through all rows in **sent.tib**. 
+* **x <- sent.tib$head[p]** populates a vector with an integer from the "head" column of the current row. This value identifies the parent of the current token. 
+* The first of the nested conditions, **if (x %in% y) { ... }** checks to see if the current token is the dependency of an ellipsis node. No syntactic information should be extracted for such tokens. If the "head" value of the current token is not in the vector of all "id" values in **sent.tib**, the condition evaluates as FALSE and the remainder of the loop is skipped.
+* The second of the nested conditions checks to see that the current token is not the sentence root. Such tokens are given a parent "id" value of 0. There is no actual token zero in a sentence; syntactic data are inapplicable here. If the condition is FALSE, the current token is a root and the rest of the loop is skipped.
+* **sent.tib$parent_POS[p] <- sent.tib$part_of_speech[which(sent.tib$id == x) ]** populates the "parent_POS" column with the appropriate value. The function **which(sent.tib$id == x)** is used to identify the row containing the parent of the current token: the "head" value of the token is in x; x must match the "id" value of some row in **sent.tib**. The "part_of_speech" value of the matched row is extracted using sub-scripting (via the **[...]** function applied to **sent.tib$part_of_speech**).
+* **sent.tib$parent_relation[p] <- sent.tib$relation[which(sent.tib$id == x) ]** uses the same method (mutatis mutandis) to populate the "parent_relation" column.
+
+
+###A loop to handle all sentences in a file
+
+The following loop strings together all the processes applied above to **sent.tib**.
+
+
+```{r}
+
+
+for (i in seq_along(sent.xml)) {
+  
+  word.l <- sent.xml[[i]] %>%
+    xml_find_all("word") %>%
+    xml_attrs()
+  
+  word.l <- word.l[which(lengths(word.l) == 7)]
+  
+  sent.workng.m <- unlist(word.l)  %>%
+    matrix(ncol = 7, byrow = TRUE)
+  
+  colnames(sent.workng.m) <- c("id", "form", "lemma", "postag", "relation", "head", "cite")
+  
+  sent.tib <-  as_tibble(sent.workng.m)
+  
+  sent.tib$id <- sent.tib$id %>%
+    as.numeric()
+  
+  sent.tib$head <- sent.tib$head %>%
+    as.numeric()
+  
+  
+  sent.tib <- sent.tib %>%
+    mutate(arc_direction = NA)
+  
+  sent.tib <- sent.tib[- which(str_detect(sent.tib$relation, "Aux[xkgXKG]") == TRUE) , ]
+  
+  for (j in seq_len(nrow(sent.tib))) {
+    
+    if (is.numeric(sent.tib$head[j]) ) {
+      
+      if (sent.tib$head[j] %>%
+          is_in( sent.tib$id)) {
+        
+        
+        if (sent.tib$id[j] < sent.tib$head[j]) {sent.tib$arc_direction[j] <- "parent_follows"}
+        if (sent.tib$id[j] > sent.tib$head[j]) {sent.tib$arc_direction[j] <- "parent_precedes"}
+        
+        
+      }
+    }
+    
+  }
+  
+  sent.tib <- sent.tib %>%
+    mutate(part_of_speech = NA)
+  
+  for (k in seq_len(nrow(sent.tib))) {
+    
+    if (str_detect(sent.tib$postag[k], "^-")) {
+      
+    } else {
+      
+      if (str_detect(sent.tib$postag[k], "^[a-z]") )
+        
+        postag <-  str_extract(sent.tib$postag[k], "^[a-z]")
+      
+      if (postag == "v") {
+        sent.tib$part_of_speech[k] <- "verb"
+      }
+      if (postag == "n") {
+        sent.tib$part_of_speech[k] <- "noun"
+      }
+      if (postag == "p") {
+        sent.tib$part_of_speech[k] <- "pronoun"
+      }
+      if (postag == "c") {
+        sent.tib$part_of_speech[k] <- "conjunction"
+      }
+      if (postag == "d") {
+        sent.tib$part_of_speech[k] <- "adverb"
+      } 
+      if (postag == "l") {
+        sent.tib$part_of_speech[k] <- "def_article"
+      }
+      if (postag == "r") {
+        sent.tib$part_of_speech[k] <- "preposition"
+      }
+      if (postag == "a") {
+        sent.tib$part_of_speech[k] <- "adjective"
+      }
+      if (postag == "u") {
+        sent.tib$part_of_speech[k] <- "punctuation"
+      }
+      if (postag == "NA") {
+        sent.tib$part_of_speech[k] <- NA
+      }
+      
+    }
+    
+  }
+  
+
+
+
+sent.tib <- sent.tib %>%
+  mutate(parent_POS = NA)
+
+sent.tib <- sent.tib %>%
+  mutate(parent_relation = NA)
+
+
+
+y <- sent.tib$id 
+
+for (p in seq_len(nrow(sent.tib))) {
+  
+  x <- sent.tib$head[p] 
+  
+  if (x %in% y) {
+    if (x > 0) {
+      sent.tib$parent_POS[p] <- sent.tib$part_of_speech[which(sent.tib$id == x) ]
+      sent.tib$parent_relation[p] <- sent.tib$relation[which(sent.tib$id == x) ]
+    }
+    
+  }
+}
+
+
+if ( i == 1) {
+  result.tib <- sent.tib
+} else {
+  result.tib <- bind_rows(result.tib, sent.tib)
+}
+
+
+
+}
+
+
+
+```
+
+* The only new code in this loop is the final conditional which collects the results from each sentence iteration into a single tibble:
+* **if ( i == 1) {result.tib <- sent.tib}** creates **result.tib** on the first iteration through **sent.xml** and populates it with the contents of **sent.tib**.
+* **else {result.tib <- bind_rows(result.tib, sent.tib)}** uses the **bind_rows()** function to add the results of further iterations through **sent.xml** as rows to the end of of **result.tib**.
+
+
+
+##Calculating Dependency-Direction Entropy Under Specified Conditions
+
+
+###Manipulating tibbles by condition of interest
+
+
+
+Entropy is most interesting in discussions of word order when entropy of that order is conditioned on some other feature. Here those figures are syntactic. For example, we may ask how much information, on average, is associated with the order of a definite article and its parent.  Answer: not very much. What about the word order of a dependent verb and its parent. Answer: practically the maximal amount of information.
+
+To ask these kind of questions, it is useful to manipulate our tibble by part-of-speech, relation, etc. The following block of code shows a way of doing that.
+
+
+```{r}
+
+entr.tib <- result.tib %>%
+  group_by(part_of_speech, arc_direction) %>%
+  na.omit() %>%
+  summarize(count =  n()) 
+
+
+
+```
+
+* The **group_by()** function is an easy way to condition variables. This function creates a grouped data frame.  Various calculations can then be performed on the groups. 
+* Here **group_by(part_of_speech, arc_direction)** takes the input tibble and generates a new tibble with 18 rows. There are nine parts-of-speech, so the result of that grouping is a nine-row tibble. There are two possible dependency-directions, for every word. Thus, associating every part-of-speech with the relevant data for word order produces 18 rows total.
+* The function **summarize()** applies "an aggregating or summary function to each group." Here the function applied is **n()**, which returns the count of the occurrence of the groups to which it is applied. For example, Polybius Book 1 has 1560 adjectives with dependency parent following and 874 with dependency parent preceding. Since entropy is based on frequency, counting the occurrence is basic. The argument **count =  n()** for the **summarize()** function, tells R to add a column called "count" containing the output of **n()**. 
+
+
+
+
+###Calculating Entropy
+
+
+```{r}
+
+
+entr.tib <- mutate(entr.tib, probs = NA)
+entr.tib <- mutate(entr.tib, surprisal = NA)
+entr.tib <- mutate(entr.tib, entropy = NA)
+entr.tib <- mutate(entr.tib, summed_entropy = NA)
+
+
+z <- unique(entr.tib[, 1]) %>%
+  unlist() %>%
+  as.character()
+
+
+
+
+for (j in seq_along(z)) {
+  
+  row.traker.v  <- which(entr.tib[, 1] == z[j])
+ 
+  probability.v <- entr.tib$count[row.traker.v ] %>%
+    divide_by(entr.tib$count[row.traker.v ] %>%
+                sum() )
+  
+  entr.tib$probs[row.traker.v] <- probability.v
+  
+  surprisal.v <- probability.v %>%
+    log2() %>%
+    multiply_by(-1)
+  
+  entr.tib$surprisal[row.traker.v] <- surprisal.v
+  
+  H.holder.v <- surprisal.v %>%
+    multiply_by(probability.v)
+  
+  entr.tib$entropy[row.traker.v] <- H.holder.v
+  
+  H.summed.v <- H.holder.v %>%
+    sum()
+  
+  entr.tib$summed_entropy[row.traker.v] <- H.summed.v
+  
+ 
+  
+} 
+
+
+```
+
+The loop above takes the values in the first column of the input tibble **entr.tib** and uses them as conditioning variables for the calculation of entropy for each group in**entr.tib**. For example, if as in the version of **entr.tib** generated above, grouping is done by part-of-speech and dependency direction, the entropy for each direction given a particular part-of-speech is calculated.
+
+* **entr.tib <- mutate(entr.tib, probs = NA)** and the next three lines create columns in **entr.tib** to hold the relevant results.
+* **z <- unique(entr.tib[, 1]) %>% unlist() %>% as.character()** creates a character vector whose elements are the names of the conditioning variables. **unique(entr.tib[, 1])** returns the values from the first column of **entr.tib** and eliminates redundant values. **unlist()** and **as.character()** ensure that the output is a simple character vector, for ease of handling.
+
+* Via **seq_along(z)**, the **for()** loop iterates through the conditioning variables. 
+* **row.traker.v  <- which(entr.tib[, 1] == z[j])** is an ad hoc way of creating a vector with the values of the row numbers in **entr.tib** corresponding to the current conditioning variable. **which(entr.tib[, 1] == z[j])** identifies rows where the value of **z[j]** corresponds to the contents of column 1 of **entr.tib**. When dependency direction is the dependent variable, the number of rows will always be two.  However, we may want to find entropy of part-of-speech conditioned by relation, for example. Such combinations require flexibility since the number of rows involved will vary.
+* **probability.v <- entr.tib\$count[row.traker.v ] %>% divide_by(entr.tib$count[row.traker.v ] %>% sum() )** Figures the probability of the dependent variable, given the conditioning variable.  This calculation is simply a matter of dividing the count of the dependent variable by the count of the conditioning variable (which is the number of cases of interest.).
+* **entr.tib$probs[row.traker.v] <- probability.v** puts the probability calculated in the previous lines into the appropriate cells in **entr.tib**.
+* **surprisal.v <- probability.v %>% log2() %>%  multiply_by(-1)** calculates the surprise of the current dependent variables. Suprisal is an measure of information. The formula for surprisal is $-log_2(p (x))$: essentially, the quantity of bits (hence $log_2$) of the probability of the variable. Because the log of a probability is a negative number, the sign is change by taking the negative log ($log_2$ of the inverse of the probability may also be used: $log_2(1/p(x))$). The result is added to the appropriate cells in **entr.tib** in the usual way.
+* **H.holder.v <- surprisal.v %>% multiply_by(probability.v)** calculates the entropy for the relevant values of the dependent variables. Entropy (H) is the average surprisal over all values that a variable may take. Its formula is: $$-\sum_{i} P_i log_2(P_i)$$ The step in this line calculates the expected value for individual values of the dependent variable by multiplying surprisal by probability. The results are added to the appropriate cells of **entr.tib** in the usual way.
+* **H.summed.v <- H.holder.v %>%  sum()** finishes the entropy calculation by summing the expected values for each possible outcome of the dependent variable. The possible values are based on the number of possible outcomes. Because dependency direction can have two outcomes, it highest entropy is 1.0 ($log_2(2)$). Entropy is highest when probability is equally distributed among possible outcomes. Entropy (= possible information) is lowest when all probability mass is associated with one outcome. The lowest entropy value for a variable is 0: for example, if a definite article is always followed by its parent, the order of the words holds no information.
+
+
+```{r}
+entr.tib$count[1:2] %>%
+  entropy(unit = "log2")
+
+
+```
+
+* It is not a bad idea to check you work with the many packages available in R. This code inputs frequency counts from the first two rows of **entr.tib** to the function **entropy()** from the package of the same name. It is reassuring to see that the results match our calculations.
+
+
+###Dependency-direction Entropy of Nouns
+
+It is instructive to drill down to look at some conditional entropies at a more granular level. We will take nouns as our example, since it is relatively easy to picture their syntactic structure without looking back at the treebanks.
+
+
+####Extracting more restricted data
+
+```{r}
+
+entr.tib <-    result.tib %>%
+  filter(part_of_speech == "noun") %>%
+  filter(!str_detect(.$relation, "_")) %>%
+  filter(relation == "ADV" |relation == "ATR" | relation == "PNOM" | relation == "OBJ" | relation == "SBJ" ) %>%
+  na.omit() %>%
+  group_by(relation,  arc_direction) %>%
+  summarize(count =  n())
+
+
+```
+
+* This code block produces a new **entr.tib** which contains simplified data on noun entropy.
+* **result.tib %>% filter(part_of_speech == "noun")** pipes the contents of **result.tib** to the **filter()** function. This function selects rows which meet the given criteria.  Here **part_of_speech == "noun"** limits the output to rows identified in the "part_of_speech" column as "noun".
+* ** %>% filter(!str_detect(.$relation, "_"))** pipes the output of the previous line to the **filter()** function which here is set to drop all rows in which the "relation" column contains the underscore character. This step removes certain complex relations which can be omitted from a discussion of dependency-direction entropy.
+* **%>% filter(relation == "ADV" | relation == "ATR" |relation == "PNOM" | relation == "OBJ" | relation == "SBJ" )** pipes the output of the preceding line to **filter()** once again. Here the function selects rows with the most important relation labels using the "or" operator (|).
+* The rest of the code block should be familiar from the first creation of **entr.tib**. 
+
+
+####Re-calculating Entropy
+
+```{r}
+
+
+entr.tib <- mutate(entr.tib, probs = NA)
+entr.tib <- mutate(entr.tib, surprisal = NA)
+entr.tib <- mutate(entr.tib, entropy = NA)
+entr.tib <- mutate(entr.tib, summed_entropy = NA)
+
+
+z <- unique(entr.tib[, 1]) %>%
+  unlist() %>%
+  as.character()
+
+
+
+
+for (j in seq_along(z)) {
+  
+  row.traker.v  <- which(entr.tib[, 1] == z[j])
+ 
+  probability.v <- entr.tib$count[row.traker.v ] %>%
+    divide_by(entr.tib$count[row.traker.v ] %>%
+                sum() )
+  
+  entr.tib$probs[row.traker.v] <- probability.v
+  
+  surprisal.v <- probability.v %>%
+    log2() %>%
+    multiply_by(-1)
+  
+  entr.tib$surprisal[row.traker.v] <- surprisal.v
+  
+  H.holder.v <- surprisal.v %>%
+    multiply_by(probability.v)
+  
+  entr.tib$entropy[row.traker.v] <- H.holder.v
+  
+  H.summed.v <- H.holder.v %>%
+    sum()
+  
+  entr.tib$summed_entropy[row.traker.v] <- H.summed.v
+  
+  
+} 
+
+
+
+
+
+
+```
+
+* This code block is simply repeated from above.  As practice, generate a tibble with noun entropy data for several of the input files. (Be sure to rename each version of the resulting **etr.tib** to avoid overwriting your results.)   What do the results tell us about word-order differences among the various authors?
+
+
+
+
+###############
+
+ 
