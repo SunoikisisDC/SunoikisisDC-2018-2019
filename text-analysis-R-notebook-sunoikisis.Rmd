@@ -1,0 +1,732 @@
+---
+title: 'Introduction to Programming through R: Sunoikisis Digital Classics Seminar, 28 February and 5 March 2019'
+output:
+  html_document:
+    toc: yes
+  html_notebook:
+    theme: united
+    toc: yes
+---
+
+## Installing R and RStudio
+
+Before the session, make sure to download the R software package from http://www.r-project.org/.
+
+- Click on "download R."
+
+- Choose the appropriate CRAN mirror in your area for downloading (for me it's the UK > Imperial College London link).
+
+- Download and install the appropriate R 3.5.2 binary for your operating system.
+
+Then download the latest version of RStudio at https://www.rstudio.com.
+
+- Click on "Download RStudio."
+
+- Download the RStudio Desktop (free) version.
+
+- Chose the appropriate installer: Most of you will use either RStudio 1.1.463 - Windows Vista/7/8/10 or Mac OS X 10.6+.
+
+## What exactly is programming?
+
+Every computer program is a series of instructions---a sequence of separate, small commands. The art of programming is to take a general idea and break it apart into separate steps. (This may be just as important as learning the rules and syntax of a particular language.)
+
+Programming (or code) consists of either imperative or declarative style. R uses imperative style, meaning it strings together instructions to the computer. (Declarative style involves telling the computer what the end result should be, like HTML code.) There are many subdivisions of imperative style, but the primary concern for beginning programmers should be procedural style: that is, describing the steps for achieving a task.
+
+Each step/instruction is a *statement*---words, numbers, or equations that express a thought.
+
+## Why are there so many languages?
+
+The central processing unit (CPU) of the computer does not understand any of them! The CPU only takes in *machine code*, which runs directly on the computer's hardware. Machine code is basically unreadable, though: it's a series of tiny numerical operations.
+
+Several popular computer programming languages are actually translations of machine code; they are literally interpreted---as opposed to a compiled---languages. They bridge the gap between machine code/computer hardware and the human programmer. What we call our *source code* is our set of statements in our preferred language that interacts with machine code.
+
+Source code is simply written in plain text in a text editor. **Do not** use a word processor.
+
+The computer knows understands source code by the file extension. For us, that means the ".R" extension (and the R notebook is ".Rmd").
+
+While you do not need a special program to write code, it is usually a good idea to use an **IDE** (integrated development environment) to help you. Many people (like me) use the [oXygen](https://www.oxygenxml.com/) IDE for editing XML documents and creating transformations with XSLT. Python users often use [Spyder](https://www.spyder-ide.org/), [Pycharm](https://www.jetbrains.com/pycharm/), or [Anaconda](https://www.anaconda.com/) Jupyter Notebooks. 
+
+For R, use [RStudio](https://www.rstudio.com/) (more on that in a moment). 
+
+## Why are we using R?
+
+Short answer: because I like R. I have learned some Python and JavaScript, too, but for some reason R worked better for me. This suggests an important takeaway from this session: there is no single language that is *better* than any other. What you chose to work with will depend on what materials you are working on, what level of comfort you have with a given language, and what kinds of outputs you would like from your code.
+
+For example, if I am primarily interested in text-based edition projects, I would be wise to work mostly with XML technologies: TEI-XML, XPath, XSLT, XQuery, XProc, just to name a few. However, I have seen people use Python and JavaScript to transform XML. While I would advocate XSLT for such an operation, it is better for you to use your preferred language to get things done.
+
+XML, R, Python, and JavaScript are all open-source languages. R and Python are quite similar and both can basically perform the same tasks.
+
+That said, R does have some distinct advantages:
+
+- The visualisation libraries are excellent. With RStudio, reporting your results is almost instantaneous.
+
+- R Markdown makes it easy to integrate the code and the results in a web browser.
+
+- It is a functional language (meaning almost everything is accomplished through functions), which works well for some.
+
+- It was built by data scientists and linguists, so it is optimal for doing statistical analyses with structured text and data sets. (Python is probably better for more general purpose and natural language processing tasks.)
+
+- It tends to be used by academics and researchers, so it works well with research questions (Python, on the other hand, is used more in private development.)
+
+- Strong user community: In CRAN (R's open-source repository), around 12000 packages are currently available.
+
+Somer notable disadvantages:
+
+- It is slow with large data sets (in which case you might want a server instantiation of RStudio).
+
+- Its programming paradigm is somewhat non-standard. It is based on the commercial [S and Splus language](https://en.wikipedia.org/wiki/S_(programming_language))). 
+
+## The R Environment (for those who are new to R)
+
+When you first launch R, you will see a console:
+
+![R image](https://daedalus.umkc.edu/StatisticalMethods/images/R-Console-300x280.png)
+
+This interface allows you to run R commands just like you would run commands on a Bash scripting shell. 
+
+When you open this file in RStudio, the command line interface (labeled "Console") is below the editing window. When you run a code block in the editing window, you will see the results appear in the Console below.
+
+## About R Markdown
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+A quick example: let's do some math. Say I am making a travel budget, and I want to add the cost of hotel and flight prices for a trip to Seattle. The flight is £550 and the hotel price per night is £133. R can do the work for you.
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. (On a Windows machine you would press *[Windows button]+Shift+Enter*.)
+
+```{r}
+550 + 133
+```
+
+R can make all kinds of calculations, so if you want to get the total cost of a five-day trip to Seattle, you can add an operator for multiplication.
+
+```{r}
+550 + 133 * 5
+```
+
+R is an object oriented programming language, so practically everything can be stored as an R object. To make our calculations effective, we need to store these kinds of calculations in variables. Variables can be assigned with either `<-` or `=`. Let's do that, and let's compare the price of a 5-day trip to Seattle to a 7-day trip to Paris.
+
+```{r}
+sea.trip.v <- 550 + 133 * 5
+
+paris.trip.v <- 110 + 90 * 7
+```
+
+What is the most expensive trip?
+
+Guess we should go to Paris. What if I just want to do both?
+
+```{r}
+sea.trip.v + paris.trip.v
+```
+
+Suppose further that I wanted to add in an optional 3-day trip to New York City. I want to see which trip would be more expensive if I were to take two out of the three options.
+
+```{r}
+nyc.trip.v <- 335 + 175 * 3
+
+sea.and.nyc <- sea.trip.v + nyc.trip.v 
+
+sea.and.paris <- sea.trip.v + paris.trip.v
+
+paris.and.nyc <- paris.trip.v + nyc.trip.v
+
+```
+
+Above you can see how powerful even simple R programming can be: you can store mathemtical operations in named variables and then use those variables to work with other variables (this becomes very important in word frequency calculations). You can also plot the results for quick assessment.
+
+```{r}
+trips <- c(sea.and.nyc, sea.and.paris, paris.and.nyc)
+barplot(trips, ylab = "Cost of each trip", names.arg = c("Seattle and NYC", "Seattle and Paris", "Paris and NYC"))
+```
+
+You see how this works, and how quickly one can store variables for even practical questions.
+
+## Reading Data
+
+There are other important kinds of R data formats that you should know. The first is a vector, which is a numbered list stored under a single name. An easy way to create a vector is to use the `c` command, which basically means "combine."
+
+```{r}
+v1 <- c("i", "wait", "with", "bated", "breath")
+
+# confirm the value of the variable by running v1
+v1
+
+# identify a specific value by indicating it is brackets
+v1[4]
+```
+
+Get used to the functions that help you understand R: `?` and `example()`.
+
+```{r}
+?c
+
+example(c, echo = FALSE) # change the echo value to TRUE to get the results
+```
+
+The `c` function is widely used, but it is really only useful for creating small data sets. Many of you will probably want to load text files. 
+
+The best way to load text files is with the `scan` function. First, download a text file of Dickens's [*Great Expectations*](https://www.dropbox.com/s/qji9ueb46ajait9/great-expectations.txt?dl=0).
+
+```{r}
+dickens.v <- scan("great-expectations.txt", what="character", sep="\n", encoding = "UTF-8")  
+```
+You have now loaded *Great Expectations* into a variable called `dickens.v`.
+
+With the text loaded, you can now run quick statistical operations, such as the number of lines and word frequencies.
+
+```{r}
+length(dickens.v) # this finds the number of lines in the book
+
+dickens.lower.v <- tolower(dickens.v) # this makes the whole text lowercased
+
+dickens.words <- strsplit(dickens.lower.v, "\\W") # strsplit is very important: it takes each word in the lowercased words vector and puts each word in a list by finding non-words, i.e., word boundaries
+
+class(dickens.words) # the class function tells you the data structure of your variable
+
+dickens.words.v <- unlist(dickens.words)
+
+class(dickens.words.v)
+
+dickens.words.v[1:10] # find the first 10 ten words in Great Expectations
+
+```
+
+Did you notice the "\\W" in the `strsplit` argument? What is that again?
+
+Also, did you notice the blank result on the 10th word? This requires a little clean-up step.
+
+```{r}
+not.blanks.v <- which(dickens.words.v!="")
+
+dickens.words.v <- dickens.words.v[not.blanks.v]
+```
+
+```{r}
+dickens.words.v[1:10]
+```
+
+
+Viola! We might want to examine how many times the third result "father" occurs (one assumes that will be an important word in this book).
+
+```{r}
+length(dickens.words.v[which(dickens.words.v=="father")])
+```
+
+Or how many unique words there are in the book.
+
+```{r}
+length(unique(dickens.words.v))
+```
+
+Divide this by the amount of words in the whole book and you can calculate vocabulary density ratios.
+
+```{r}
+unique.words <- length(unique(dickens.words.v))
+
+total.words <- length(dickens.words.v)
+
+unique.words/total.words 
+# you could do this quicker this way: 
+# length(unique(dickens.words.v))/length(dickens.words.v) 
+# BUT it's good to get into the practice of storing results in variables
+```
+That's actually a fairly small density number, 5.7% (*Moby-Dick* by comparison is about 8%).
+
+The other important data structures are tables and data frames. These are probably the most useful for sophisticated analyses, because it renders the data in a table that is very similar to a spreadsheet. It is important to input your data in an Excel or Google docs spreadsheet and then export that data into a comma separated value (.csv) or tab separated value (.tsv) file. Many of the tidytext operations work with data frames, as we'll see later.
+
+## Flow control
+
+Flow control involves **stochastic simulation**, or repetitive operations or pattern recognition---two of the more important reasons why we use programming languages. The most common form of stochastic simulation is the for() loop. This is a logical command with the following syntax
+
+for (`name` in `vector`) {[enter commands]}
+
+This sets a variable called `name` equal to each of the elements of the vector in sequence. Each of these iterates over the command as many times as is necessary. 
+
+A simple example is the Fibonacci sequence. A for() loop can automatically generate the first 20 Fibonacci numbers.
+
+```{r}
+Fibonacci <- numeric(20) # creates a vector called Fibonacci that consists of 20 numeric vectors
+
+Fibonacci[1] <- Fibonacci[2] <- 1 # defines the first and second elements as a value of 1. This is important b/c the first two Fibonacci numbers are 1, and the next (3rd) number is gained by adding the first two
+
+for (i in 3:20) Fibonacci[i] <- Fibonacci[i - 2] + Fibonacci[i - 1] # says for each instance of the 3rd through 20th Fibonacci numbers, take the first element - 2 and add that to the next element - 1
+Fibonacci
+```
+
+There is another important component to flow control: the conditional. In programming this takes the form of `if()` statements.
+
+**Syntax**
+
+`if (condition) {commands when TRUE}`
+
+`if (condition) {commands when TRUE} else {commands when FALSE}`
+
+We will not have time to go into details regarding these operations, but it is important to recognize them when you are reading or modifying someone else's code.
+
+Now, using what we know about regular expressions and flow control, let's have look at a for() loop that Matthew Jockers uses in Chapter 4 of his *Text Analysis for Students of Literature*. It's a fairly complicated but useful way of breaking up a novel text into chapters for comparative analysis. Let's return to Dickens. 
+
+```{r}
+text.v <- scan("great-expectations.txt", what="character", sep="\n", encoding = "UTF-8") 
+start.v <- which(text.v == "Chapter I")
+end.v <- which(text.v == "THE END")
+novel.lines.v <- text.v[start.v:end.v]
+chap.positions.v <- grep("^Chapter \\w", novel.lines.v)
+
+chapter.raws.l <- list()
+chapter.freqs.l <- list()
+
+for(i in 1:length(chap.positions.v)){
+    if(i != length(chap.positions.v)){
+chapter.title <- novel.lines.v[chap.positions.v[i]]
+start <- chap.positions.v[i]+1
+end <- chap.positions.v[i+1]-1
+chapter.lines.v <- novel.lines.v[start:end]
+chapter.words.v <- tolower(paste(chapter.lines.v, collapse=" ")) 
+chapter.words.l <- strsplit(chapter.words.v, "\\W") 
+chapter.word.v <- unlist(chapter.words.l)
+chapter.word.v <- chapter.word.v[which(chapter.word.v!="")] 
+chapter.freqs.t <- table(chapter.word.v) 
+chapter.raws.l[[chapter.title]] <- chapter.freqs.t 
+chapter.freqs.t.rel <- 100*(chapter.freqs.t/sum(chapter.freqs.t)) 
+chapter.freqs.l[[chapter.title]] <- chapter.freqs.t.rel
+    } 
+}
+```
+
+Suppose I wanted to get all relative frequencies of the word "father" in each chapter.
+
+```{r}
+father.freqs <- lapply(chapter.freqs.l, '[', 'father')
+
+father.freqs
+```
+
+You could also use variations of the `which` function to identify the chapters with the highest and lowest frequencies.
+
+```{r}
+which.max(father.freqs)
+
+which.min(father.freqs)
+```
+
+
+## Part I: Using TidyText to 'read' all of Livy
+
+For these two lessons we will be modifying code from Julia Silge and David Robinson's [*Text Mining with R: A Tidy Approach*](https://www.tidytextmining.com/).
+
+Before getting started, make sure you have set your working directory.
+
+```{r warning = FALSE}
+setwd("~/Desktop")
+```
+
+We did this to situate ourselves correctly within the filing system: we set our working directory to a reasonable place, the Desktop.
+
+Note that the squiggly line (~) tells the system to return to the root directory, and your Desktop should be the next step (/) from the root.
+
+Now we will load the necessary libraries for these lessons.
+
+```{r warning = FALSE}
+library(tidytext)
+library(dplyr)
+library(stringr)
+library(glue)
+library(tidyverse)
+library(tidyr)
+library(ggplot2)
+library(gutenbergr)
+```
+
+By running the gutenberg_authors function, you can see the file format of the names.
+
+```{r}
+gutenberg_authors
+```
+
+Let's run our first file loading function. 
+
+```{r}
+# this searches gutenberg for titles with the author name specified after the 'str_detect' function
+gutenberg_works(str_detect(author, "Livy"))$title
+```
+
+Did you notice anything wrong with this? The first result duplicates some of the content of the fourth, so we should not use that first text id. Remember, the first rule of scholarship is TRUST NO ONE. In computing, never trust your data. So we'll narrow the ingestion of the gutenberg ids to start with the second result.
+
+```{r warning=FALSE}
+# creates a variable that takes all the gutenberg ids of 
+ids <- gutenberg_works(str_detect(author, "Livy"))$gutenberg_id[2:5]
+
+livy <- gutenbergr::gutenberg_download(ids)
+livy <- livy %>%
+  group_by(gutenberg_id) %>%
+  mutate(line = row_number()) %>%
+  ungroup()
+```
+
+Here we created a new vector called ```livy``` and invoked the 'gutenberg_works' function to find Livy. What does the ```gutenberg_download``` function do? Again, type in the ? before the function to receive a description from the R Documentation. Try the `example` function, too.
+
+Also, from the code above you might be wondering what the ```$``` and ```%>%``` symbols mean. The ```$``` refers to a variable. The ```%>%``` is a connector (a pipe) that mimics nesting. The rule is that the object on the left side is passed as the first argument to the function on the right hand side, so considering the last two lines, ```mutate(line = row_number()) %>% ungroup()``` is the same as ```ungroup(mutate(line = row_number()))```. It just makes the code (and particularly multi-step functions) more readable.^[Granted, it is not part of R's base code, but it was defined by the `magrittr` package and is now widely used in the ```dplyr``` and ```tidyr``` packages.]
+
+```{r}
+?gutenberg_download
+```
+
+Now let's see what we have downloaded. R has a summary function to show metadata about the new vector we just created, ```livy```.
+
+```{r}
+summary(livy)
+```
+
+Now we transform this into a tidy data set.
+
+```{r}
+tidy_livy <- livy %>%
+  unnest_tokens(output = word, input = text, token = "words")
+  
+tidy_livy %>% 
+  count(word, sort = TRUE) %>%
+  filter(n > 4000) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip()
+```
+
+Now we are mostly seeing functions words in these results. But what is interesting about the function words? Notice the prominence of pronouns, for example.
+
+Of course you will want to complement these results with substantive results (i.e., with stop words filtered out).
+
+```{r}
+data(stop_words)
+
+tidy_livy <- tidy_livy %>%
+  anti_join(stop_words)
+
+livy_plot <- tidy_livy %>% 
+  count(word, sort = TRUE) %>%
+  filter(n > 600) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n)) +
+  geom_col() +
+  ylab("Word frequencies in Livy's History of Rome") +
+  coord_flip()
+
+livy_plot
+```
+
+In the visual above, you might want to locate the button in the upper right corner 'Show in New Window', so that you can zoom the results out.
+
+We might also want to read (or have a searchable list in a table) of the word frequencies. The first code block below renders the results above in a table, and the second code block writes all of the results into a csv (spreadsheet) file.
+
+```{r}
+tidy_livy %>%
+  count(word, sort = TRUE)
+
+livy_words <- tidy_livy %>%
+  count(word, sort = TRUE)
+
+write_csv(livy_words, "livy_words.csv")
+```
+
+Much of what we have done can also be done in [Voyant Tools](http://voyant-tools.org/), to be sure. However, we have been able to load data *faster* in R, and we have also organized the data is tidytext tables that allow us to make judgments about the similarities and differences between the works in the corpus. It is also important to stress that you retain more control over organizing and manipulating your data with R, whereas in Voyant you are beholden to unstructured text files in a pre-built visualization interface.
+
+To illustrate this flexibility, let's investigate the data in ways that are unique to R (and programming in general).
+
+We might want to make similar calculations by book, which is easier now due to the tidy data structure.
+
+```{r}
+livy_word_freqs_by_book <- tidy_livy %>%
+  group_by(gutenberg_id) %>%
+  count(word, sort = TRUE) %>%
+  ungroup()
+
+livy_word_freqs_by_book %>%
+    filter(n > 250) %>%
+    ggplot(mapping = aes(x = word, y = n)) +
+    geom_col() +
+    coord_flip()
+```
+
+This shows you the general trend of each word that is used more than 250 times in alphabetical order. We can also break up the results into individual graphs for each book.
+
+```{r}
+livy_word_freqs_by_book %>%
+    filter(n > 250) %>%
+    ggplot(mapping = aes(x = word, y = n)) +
+    geom_col() +
+    coord_flip() + facet_wrap(facets = ~ gutenberg_id)
+```
+
+This might appear to be an overwhelming picture, but it is an immediate display of similarities and differences between books. Granted, they are slightly out of order (id 10907 is The History of Rome, Books 09 to 26, and 12582 is Books 01 to 08), but you can immediately notice how the first half differs from the second in its content.  
+
+We could re-engineer the code in the previous examples to look more closely at these results. First we'll narrow our data set to the more interesting id numbers mentioned already.
+
+```{r}
+livy2 <- gutenberg_download(c(10907, 44318))
+
+livy_tidy2 <- livy2 %>%
+  group_by(gutenberg_id) %>%
+  mutate(line = row_number()) %>%
+  ungroup()
+
+livy_tidy2 <- livy_tidy2 %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words)
+
+livy_word_freqs_by_book <- livy_tidy2 %>%
+  group_by(gutenberg_id) %>%
+  count(word, sort = TRUE) %>%
+  ungroup()
+
+livy_word_freqs_by_book %>%
+    filter(n > 210) %>%
+    ggplot(mapping = aes(x = word, y = n)) +
+    geom_col() +
+    coord_flip() + facet_wrap(facets = ~ gutenberg_id)
+
+```
+
+What is the most consistent word used throughout Livy's *History*?
+
+Let's now compare these results to another important chronicler, from a different era: Herodotus.
+
+```{r}
+herodotus <- gutenberg_download(c(2707, 2456))
+```
+
+This downloads the two-volume *Histories* of Herodotus e-text (note that the c values are the gutenberg ids of two vols of Herodotus' Histories. The ids can be found by searching for texts on gutenberg.org, clicking on the Bibrec tab, and copying the EBook-No.).
+
+```{r}
+tidy_herodotus <- herodotus %>%
+  unnest_tokens(word, text)
+
+tidy_herodotus %>%
+  count(word, sort = TRUE)
+```
+
+What are the differences here with the Livy results?
+
+Now let's filter out the stop words again.
+
+```{r}
+tidy_herodotus <- herodotus %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words) 
+
+tidy_herodotus %>%
+  count(word, sort = TRUE)
+```
+
+We could also add into the mix yet another text. Let's try Edward Gibbon.
+
+```{r}
+gibbon <- gutenberg_works(author == "Gibbon, Edward") %>%
+  gutenberg_download(meta_fields = "title")
+
+tidy_gibbon <- gibbon %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words)
+
+tidy_gibbon %>%
+  count(word, sort = TRUE)
+```
+
+
+Let's visualize the differences.
+
+```{r}
+frequency <- bind_rows(mutate(tidy_livy, author = "Livy"),
+                       mutate(tidy_herodotus, author = "Herodotus"),
+                       mutate(tidy_gibbon, author = "Edward Gibbon")) %>% 
+  mutate(word = str_extract(word, "['a-z']+")) %>%
+  count(author, word) %>%
+  group_by(author) %>%
+  mutate(proportion = n / sum(n)) %>% 
+  select(-n) %>% 
+  spread(author, proportion) %>% 
+  gather(author, proportion, `Livy`:`Herodotus`)
+```
+
+```{r warning = FALSE}
+library(scales)
+ggplot(frequency, aes(x = proportion, y = `Edward Gibbon`, color = abs(`Edward Gibbon` - proportion))) +
+  geom_abline(color = "gray40", lty = 2) +
+  geom_jitter(alpha = 0.1, size = 2.5, width = 0.3, height = 0.3) +
+  geom_text(aes(label = word), check_overlap = TRUE, vjust = 1.5) +
+  scale_x_log10(labels = percent_format()) +
+  scale_y_log10(labels = percent_format()) +
+  scale_color_gradient(limits = c(0, 0.001), low = "darkslategray4", high = "gray75") +
+  facet_wrap(~author, ncol = 2) +
+  theme(legend.position="none") +
+  labs(y = "Edward Gibbon", x = NULL)
+```
+
+Words that group near the upper end of the diagonal line in these plots have similar frequencies in both sets of texts.
+
+```{r}
+cor.test(data = frequency[frequency$author == "Livy",],
+         ~ proportion + `Edward Gibbon`)
+```
+
+```{r}
+cor.test(data = frequency[frequency$author == "Herodotus",],
+         ~ proportion + `Edward Gibbon`)
+```
+
+What this proves (statistically) is that the word frequencies of Gibbon are more correlated to Herodotus than to Livy---which is fascinating, given that Gibbon what writing about the same subject as Livy! 
+
+What else can you infer from these comparisons?
+
+## Part II: Using TidyText to perform sentiment analysis
+
+Let's continue with two of our authors from the previous section: Herodotus and Livy. Now we will create a 'words' vector that goes through the standard tidytext process of uploading a text file, creating a dataframe of words and row numbers, and tokenizing the words in the text file.
+
+```{r}
+livy <- livy %>% unnest_tokens(word,text)
+
+write.table(livy, file = "livy.txt")
+
+livy_words <- data_frame(file = paste0('livy.txt')) %>%
+  mutate(text = map(file, read_lines)) %>%
+  unnest() %>%
+  group_by(file = str_sub(basename(file), 1, -5)) %>%
+  mutate(line_number = row_number()) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+```
+
+Next you invoke the 'inner_join' function which is essentially a way of conflating a data set against another. Here we are joining the text data from Herodotus with a dictionary of sentiment words that assigns relative values to each word.
+
+```{r}
+livy_words_sentiment <- inner_join(livy_words,
+                              get_sentiments("bing")) %>%
+  count(file, index = round(line_number/ max(line_number) * 100 / 5) * 5, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(net_sentiment = positive - negative)
+```
+
+Using the ggplot library, we can visualise the results. 
+
+```{r}
+livy_words_sentiment %>% ggplot(aes(x = index, y = net_sentiment, fill = file)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  facet_wrap(~ file) + 
+  scale_x_continuous("Location in the volume") + 
+  scale_y_continuous("Bing net Sentiment")
+```
+
+Let's make this interesting: let's compare these results to Gibbon. 
+
+```{r}
+herodotus <- herodotus %>% unnest_tokens(word,text)
+
+write.table(herodotus, file = "herodotus.txt")
+
+herodotus_words <- data_frame(file = paste0("herodotus.txt")) %>%
+  mutate(text = map(file, read_lines)) %>%
+  unnest() %>%
+  group_by(file = str_sub(basename(file), 1, -5)) %>%
+  mutate(line_number = row_number()) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+
+herodotus_words_sentiment <- inner_join(herodotus_words,
+                                                 get_sentiments("bing")) %>%
+  count(file, index = round(line_number/ max(line_number) * 100 / 5) * 5, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(net_sentiment = positive - negative)
+
+herodotus_words_sentiment %>% ggplot(aes(x = index, y = net_sentiment, fill = file)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  facet_wrap(~ file) + 
+  scale_x_continuous("Location in the volume (by percentage)") + 
+  scale_y_continuous("Bing net sentiment of Herodotus's Histories...")
+
+```
+
+That's quite a difference. Clearly the Roman histories were more interested in negative words. Let's break down the Livy results into more understandable graphs.
+
+```{r}
+bing_word_counts <- livy_words %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(20) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(y = "Word Frequency of Sentiment Words in Livy",
+       x = NULL) +
+  coord_flip()
+summary(bing_word_counts)
+```
+```{r}
+bing_word_counts <- herodotus_words %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(20) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(y = "Word Frequency of Sentiment Words in Herodotus",
+       x = NULL) +
+  coord_flip()
+summary(bing_word_counts)
+```
+
+Another way to re-orient the sentiment results is to create a word cloud. Sometimes these can be useful for assessing the total weight of positivity or negativity in a corpus.
+
+```{r}
+library(wordcloud)
+library(reshape2)
+
+# create a sentiment wordcloud of the Livy results
+
+livy_words %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(max.words = 1000, scale = c(1,.25), 
+                   random.order = FALSE,
+                   colors = c("red", "blue"))
+```
+
+As you can see, the cloud displays the overall negativity that the line graph above suggested. Let's see how that compares to Herodotus.
+
+```{r}
+library(wordcloud)
+library(reshape2)
+
+# create a sentiment wordcloud of the Herodotus results
+
+herodotus_words %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(max.words = 1000, scale = c(1,.25), 
+                   random.order = FALSE,
+                   colors = c("red", "blue"))
+```
+
+## Conclusion: Publish your results
+
+How can you adapt these results to other texts?
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
+
+If you are interested in learning more about R and corpus linguistics, in addition to Silge and Robinson and Jockers, you could also consult R. H. Baayen's *Analyzing Linguistic Data: A practical introduction to statistics* (Cambridge UP, 2008) and Stefan Gries's *Quantitative Corpus Linguistics with R*, 2nd ed. (Routledge, 2017).
+
+Some good web resources include Jeff Rydberg-Cox's [Introduction to R](https://daedalus.umkc.edu/StatisticalMethods/index.html) and David Silge and Julia Robinson's [*Text Mining with R*](https://www.tidytextmining.com/). Also be sure to examine the [CRAN R Documentation site](https://cran.r-project.org/doc/manuals/R-intro.html).
