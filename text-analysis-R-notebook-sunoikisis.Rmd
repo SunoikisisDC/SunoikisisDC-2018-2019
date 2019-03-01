@@ -8,7 +8,7 @@ output:
     toc: yes
 ---
 
-## Installing R and RStudio
+**Installing R and RStudio**
 
 Before the session, make sure to download the R software package from http://www.r-project.org/.
 
@@ -42,7 +42,7 @@ Several popular computer programming languages are actually translations of mach
 
 Source code is simply written in plain text in a text editor. **Do not** use a word processor.
 
-The computer knows understands source code by the file extension. For us, that means the ".R" extension (and the R notebook is ".Rmd").
+The computer understands source code by the file extension. For us, that means the ".R" extension (and the R notebook is ".Rmd").
 
 While you do not need a special program to write code, it is usually a good idea to use an **IDE** (integrated development environment) to help you. Many people (like me) use the [oXygen](https://www.oxygenxml.com/) IDE for editing XML documents and creating transformations with XSLT. Python users often use [Spyder](https://www.spyder-ide.org/), [Pycharm](https://www.jetbrains.com/pycharm/), or [Anaconda](https://www.anaconda.com/) Jupyter Notebooks. 
 
@@ -70,11 +70,11 @@ That said, R does have some distinct advantages:
 
 - Strong user community: In CRAN (R's open-source repository), around 12000 packages are currently available.
 
-Somer notable disadvantages:
+Some notable disadvantages:
 
 - It is slow with large data sets (in which case you might want a server instantiation of RStudio).
 
-- Its programming paradigm is somewhat non-standard. It is based on the commercial [S and Splus language](https://en.wikipedia.org/wiki/S_(programming_language))). 
+- Its programming paradigm is somewhat non-standard. It is based on the commercial [S and S-plus languages](https://en.wikipedia.org/wiki/S_(programming_language))). 
 
 ## The R Environment (for those who are new to R)
 
@@ -88,7 +88,7 @@ When you open this file in RStudio, the command line interface (labeled "Console
 
 ## About R Markdown
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. The results can also be published as an HTML file. 
 
 A quick example: let's do some math. Say I am making a travel budget, and I want to add the cost of hotel and flight prices for a trip to Seattle. The flight is £550 and the hotel price per night is £133. R can do the work for you.
 
@@ -104,12 +104,16 @@ R can make all kinds of calculations, so if you want to get the total cost of a 
 550 + 133 * 5
 ```
 
-R is an object oriented programming language, so practically everything can be stored as an R object. To make our calculations effective, we need to store these kinds of calculations in variables. Variables can be assigned with either `<-` or `=`. Let's do that, and let's compare the price of a 5-day trip to Seattle to a 7-day trip to Paris.
+R is an object-oriented programming language, so practically everything can be stored as an R object. The commands are either **expressions** or **assignments**. An expression (when written as a command) is evaluated and printed (unless specifically made invisible), but the value is lost. An assignment also evaluates an expression but the the value is stored in a variable (and the result is not automatically printed).
+
+To make our calculations effective, we need to store these kinds of calculations in variables. Variables can be assigned with either `<-` or `=`. Let's do that by comparing the price of a 5-day trip to Seattle to a 7-day trip to Paris.
 
 ```{r}
 sea.trip.v <- 550 + 133 * 5
 
 paris.trip.v <- 110 + 90 * 7
+
+sea.trip.v < paris.trip.v
 ```
 
 What is the most expensive trip?
@@ -133,7 +137,7 @@ paris.and.nyc <- paris.trip.v + nyc.trip.v
 
 ```
 
-Above you can see how powerful even simple R programming can be: you can store mathemtical operations in named variables and then use those variables to work with other variables (this becomes very important in word frequency calculations). You can also plot the results for quick assessment.
+Above you can see how powerful even simple R programming can be: you can store mathemtical operations in named variables and use those variables to work with other variables (this becomes very important in word frequency calculations). You can also plot the results for quick assessment.
 
 ```{r}
 trips <- c(sea.and.nyc, sea.and.paris, paris.and.nyc)
@@ -144,7 +148,7 @@ You see how this works, and how quickly one can store variables for even practic
 
 ## Reading Data
 
-There are other important kinds of R data formats that you should know. The first is a vector, which is a numbered list stored under a single name. An easy way to create a vector is to use the `c` command, which basically means "combine."
+There are other important kinds of R data formats that you should know. The first is a vector, which is a single variable consisting of an ordered collection numbers and/or words. An easy way to create a vector is to use the `c` command, which basically means "combine."
 
 ```{r}
 v1 <- c("i", "wait", "with", "bated", "breath")
@@ -164,12 +168,20 @@ Get used to the functions that help you understand R: `?` and `example()`.
 example(c, echo = FALSE) # change the echo value to TRUE to get the results
 ```
 
-The `c` function is widely used, but it is really only useful for creating small data sets. Many of you will probably want to load text files. 
+The `c` function is widely used, but it is really only useful for creating small data sets. Many of you will probably want to load text files.
 
-The best way to load text files is with the `scan` function. First, download a text file of Dickens's [*Great Expectations*](https://www.dropbox.com/s/qji9ueb46ajait9/great-expectations.txt?dl=0).
+[Jeff Rydberg-Cox](https://daedalus.umkc.edu/StatisticalMethods/preparing-literary-data.html) provides some helpful tips for preparing data for R processing:
+
+- Download the text(s) from a source repository.
+
+- Remove extraneous material from the text(s).
+
+- Transform the text(s) to answer your research questions.
+
+The best way to load text files is with the `scan` function. (The other important function is `read.table`, which handles csv files.) First, download a text file of Dickens's [*Great Expectations*](https://www.dropbox.com/s/qji9ueb46ajait9/great-expectations.txt?dl=0) onto your working directory.
 
 ```{r}
-dickens.v <- scan("great-expectations.txt", what="character", sep="\n", encoding = "UTF-8")  
+dickens.v <- scan("great-expectations.txt", what="character", sep="\n", encoding = "UTF-8")
 ```
 You have now loaded *Great Expectations* into a variable called `dickens.v`.
 
@@ -189,10 +201,9 @@ dickens.words.v <- unlist(dickens.words)
 class(dickens.words.v)
 
 dickens.words.v[1:10] # find the first 10 ten words in Great Expectations
-
 ```
 
-Did you notice the "\\W" in the `strsplit` argument? What is that again?
+Did you notice the "\\W" in the `strsplit` argument? What is that again? RegEx!
 
 Also, did you notice the blank result on the 10th word? This requires a little clean-up step.
 
@@ -202,16 +213,34 @@ not.blanks.v <- which(dickens.words.v!="")
 dickens.words.v <- dickens.words.v[not.blanks.v]
 ```
 
+Extra white spaces often cause problems for text analysis.
+
 ```{r}
 dickens.words.v[1:10]
 ```
 
 
-Viola! We might want to examine how many times the third result "father" occurs (one assumes that will be an important word in this book).
+Viola! We might want to examine how many times the third result "father" occurs (the fourth word result, and one that will probably be an important word in this book).
 
 ```{r}
 length(dickens.words.v[which(dickens.words.v=="father")])
 ```
+
+Or produce a list of all unique words.
+
+```{r}
+unique(sort(dickens.words.v, decreasing = FALSE))
+```
+Another problem: we find in our unique word list some clear non-words such as "0037m." 
+
+## Exercise 1 
+
+How could we create a regular expression to remove those non-words in `dickens.words.v`?
+
+```{r}
+
+```
+
 
 Or how many unique words there are in the book.
 
@@ -219,7 +248,7 @@ Or how many unique words there are in the book.
 length(unique(dickens.words.v))
 ```
 
-Divide this by the amount of words in the whole book and you can calculate vocabulary density ratios.
+Divide this by the amount of words in the whole book to calculate vocabulary density ratios.
 
 ```{r}
 unique.words <- length(unique(dickens.words.v))
@@ -310,6 +339,14 @@ which.max(father.freqs)
 which.min(father.freqs)
 ```
 
+## Exercise 2
+
+Modify the for loop above by confining your results to only dialogue.
+
+```{r}
+
+```
+
 
 ## Part I: Using TidyText to 'read' all of Livy
 
@@ -323,9 +360,9 @@ setwd("~/Desktop")
 
 We did this to situate ourselves correctly within the filing system: we set our working directory to a reasonable place, the Desktop.
 
-Note that the squiggly line (~) tells the system to return to the root directory, and your Desktop should be the next step (/) from the root.
+Note that the squiggly line (~) tells the system to return to the root (or home) directory, and your Desktop should be the next step (/) from the root.
 
-Now we will load the necessary libraries for these lessons.
+Next we load the necessary libraries for these lessons. **Note**: If you get error messages, you will need to install the libraries by navigating to the "Packages" tab on the right-side panel of RStudio. Then click "Install," enter the name of the package, and install it.
 
 ```{r warning = FALSE}
 library(tidytext)
@@ -428,6 +465,9 @@ livy_words <- tidy_livy %>%
   count(word, sort = TRUE)
 
 write_csv(livy_words, "livy_words.csv")
+
+# Note that if you want to retain the tidy data (that is, the title-line-word columns in multiple works, say),
+# then you would just invoke the tidy_livy variable: write_csv(tidy_livy, "livy_words.csv")
 ```
 
 Much of what we have done can also be done in [Voyant Tools](http://voyant-tools.org/), to be sure. However, we have been able to load data *faster* in R, and we have also organized the data is tidytext tables that allow us to make judgments about the similarities and differences between the works in the corpus. It is also important to stress that you retain more control over organizing and manipulating your data with R, whereas in Voyant you are beholden to unstructured text files in a pre-built visualization interface.
@@ -721,9 +761,20 @@ herodotus_words %>%
                    colors = c("red", "blue"))
 ```
 
-## Conclusion: Publish your results
+## Exercise 3
 
-How can you adapt these results to other texts?
+Load your own texts (either from your own corpus or from a digital repository like Perseus or Project Gutenberg).
+
+Posit a new question--or questions--about what you would like to investigate further. 
+
+Modify a code block(s) from Part I of the R Notebook to answer your question.
+
+```{r}
+
+```
+
+
+## Publish your results
 
 When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
 
