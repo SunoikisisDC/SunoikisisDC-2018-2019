@@ -190,9 +190,10 @@ With the text loaded, you can now run quick statistical operations, such as the 
 ```{r}
 length(dickens.v) # this finds the number of lines in the book
 
-dickens.lower.v <- tolower(dickens.v) # this makes the whole text lowercased
+dickens.lower.v <- tolower(dickens.v) # this makes the whole text lowercased, and each sentence is now in a list
 
-dickens.words <- strsplit(dickens.lower.v, "\\W") # strsplit is very important: it takes each word in the lowercased words vector and puts each word in a list by finding non-words, i.e., word boundaries
+dickens.words <- strsplit(dickens.lower.v, "\\W") # strsplit is very important: it takes each sentence in the lowercased words vector and puts each word in a list by finding non-words, i.e., word boundaries
+# each list item (word) corresponds to an element of the book's sentences that has been split. In the simplest case, x is a single character string, and strsplit outputs a one-item list.
 
 class(dickens.words) # the class function tells you the data structure of your variable
 
@@ -200,10 +201,10 @@ dickens.words.v <- unlist(dickens.words)
 
 class(dickens.words.v)
 
-dickens.words.v[1:10] # find the first 10 ten words in Great Expectations
+dickens.words.v[1:20] # find the first 20 ten words in Great Expectations
 ```
 
-Did you notice the "\\W" in the `strsplit` argument? What is that again? RegEx!
+Did you notice the "\\W" in the `strsplit` argument? What is that again? Regex! Notice that in R you need to use another backslash to indicate a character escape.
 
 Also, did you notice the blank result on the 10th word? This requires a little clean-up step.
 
@@ -216,11 +217,11 @@ dickens.words.v <- dickens.words.v[not.blanks.v]
 Extra white spaces often cause problems for text analysis.
 
 ```{r}
-dickens.words.v[1:10]
+dickens.words.v[1:20]
 ```
 
 
-Viola! We might want to examine how many times the third result "father" occurs (the fourth word result, and one that will probably be an important word in this book).
+Voila! We might want to examine how many times the third result "father" occurs (the fourth word result, and one that will probably be an important word in this book).
 
 ```{r}
 length(dickens.words.v[which(dickens.words.v=="father")])
@@ -231,29 +232,46 @@ Or produce a list of all unique words.
 ```{r}
 unique(sort(dickens.words.v, decreasing = FALSE))
 ```
-Another problem: we find in our unique word list some clear non-words such as "0037m." 
+
+Here we find another problem: we find in our unique word list some odd non-words such as "0037m." We should strip those out.
 
 ## Exercise 1 
 
-How could we create a regular expression to remove those non-words in `dickens.words.v`?
+Create a regular expression to remove those non-words in `dickens.words.v`? Remember that you use two backslashes (//) for character escape. For more information on using regex in R, RStudio has a helpful [cheat sheet](https://www.rstudio.com/wp-content/uploads/2016/09/RegExCheatsheet.pdf).
 
 ```{r}
+# the pattern for finding those numerical bits is "\\d+[a-z]*", or (more precisely) "\\d{4}\\w*"
+# but b/c I am not sure if all of those instances start with four numbers I will keep the expression flexible
+# also the regex above takes out other random numbers -- do you understand why? what's the difference between "\\d+[a-z]*" and "\\d+[a-z]"
+# one way to handle this is to use gsub, a common regex-related function in R 
 
+dickens.words.clean.v <- gsub("\\d+[a-z]*", "", dickens.words.v) 
+# gsub is a function for stripping out stuff by means of a global regex search and replace: 
+# after entering gsub, within the parentheses you enter the regex in quotes, then its replacement (which in this case is a blank), then the vector to which it applies
 ```
 
-
-Or how many unique words there are in the book.
+Now let's re-run that not.blanks vector to strip out the blank you just added. 
 
 ```{r}
-length(unique(dickens.words.v))
+not.blanks.v <- which(dickens.words.clean.v!="")
+
+dickens.words.clean.v <- dickens.words.clean.v[not.blanks.v]
+
+unique(sort(dickens.words.clean.v, decreasing = FALSE))[1:50]
+```
+
+Returning to basic functions, now that we have done some more clean-up: how many unique words are in the book?
+
+```{r}
+length(unique(dickens.words.clean.v))
 ```
 
 Divide this by the amount of words in the whole book to calculate vocabulary density ratios.
 
 ```{r}
-unique.words <- length(unique(dickens.words.v))
+unique.words <- length(unique(dickens.words.clean.v))
 
-total.words <- length(dickens.words.v)
+total.words <- length(dickens.words.clean.v)
 
 unique.words/total.words 
 # you could do this quicker this way: 
@@ -302,6 +320,8 @@ end.v <- which(text.v == "THE END")
 novel.lines.v <- text.v[start.v:end.v]
 chap.positions.v <- grep("^Chapter \\w", novel.lines.v)
 
+novel.lines.v[chap.positions.v]
+
 chapter.raws.l <- list()
 chapter.freqs.l <- list()
 
@@ -341,12 +361,41 @@ which.min(father.freqs)
 
 ## Exercise 2
 
-Modify the for loop above by confining your results to only dialogue.
+Create a vector that confines your results to only the paragraphs with dialogue.
 
 ```{r}
+dialogue.v <- grep('"\\w.*?"', novel.lines.v) # grep is another regex function
 
+novel.lines.v[dialogue.v][1:10] # check your work by finding all the dialogue lines in novel.lines.v
 ```
 
+**Bonus Exercise**
+
+Modify the for loop in Jockers to find word frequencies only of content with dialogue.
+
+```{r}
+chapter.raws.l <- list()
+chapter.freqs.l <- list()
+
+for(i in 1:length(chap.positions.v)){
+    if(i != length(chap.positions.v)){
+chapter.title <- novel.lines.v[chap.positions.v[i]]
+start <- chap.positions.v[i]+1
+end <- chap.positions.v[i+1]-1
+chapter.lines.v <- novel.lines.v[start:end]
+chapter.words.v <- tolower(paste(chapter.lines.v, collapse=" ")) 
+chapter.words.l <- strsplit(chapter.words.v, "\\W") 
+chapter.word.v <- unlist(chapter.words.l)
+chapter.word.v <- chapter.word.v[which(chapter.word.v!="")] 
+chapter.freqs.t <- table(chapter.word.v) 
+chapter.raws.l[[chapter.title]] <- chapter.freqs.t 
+chapter.freqs.t.rel <- 100*(chapter.freqs.t/sum(chapter.freqs.t)) 
+chapter.freqs.l[[chapter.title]] <- chapter.freqs.t.rel
+    } 
+}
+
+chapter.freqs.l[1:10]
+```
 
 ## Part I: Using TidyText to 'read' all of Livy
 
