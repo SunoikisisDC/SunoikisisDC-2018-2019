@@ -364,9 +364,9 @@ which.min(father.freqs)
 Create a vector that confines your results to only the paragraphs with dialogue.
 
 ```{r}
-dialogue.v <- grep('"\\w.*?"', novel.lines.v) # grep is another regex function
+dialogue.v <- grep('"(.*?)"', novel.lines.v) # grep is another regex function
 
-novel.lines.v[dialogue.v][1:10] # check your work by finding all the dialogue lines in novel.lines.v
+novel.lines.v[dialogue.v][1:20] # check your work by finding all the dialogue lines in novel.lines.v
 ```
 
 **Bonus Exercise**
@@ -374,8 +374,8 @@ novel.lines.v[dialogue.v][1:10] # check your work by finding all the dialogue li
 Modify the for loop in Jockers to find word frequencies only of content with dialogue.
 
 ```{r}
-chapter.raws.l <- list()
-chapter.freqs.l <- list()
+dialogue.chapter.raws.l <- list()
+dialogue.chapter.freqs.l <- list()
 
 for(i in 1:length(chap.positions.v)){
     if(i != length(chap.positions.v)){
@@ -383,18 +383,19 @@ chapter.title <- novel.lines.v[chap.positions.v[i]]
 start <- chap.positions.v[i]+1
 end <- chap.positions.v[i+1]-1
 chapter.lines.v <- novel.lines.v[start:end]
-chapter.words.v <- tolower(paste(chapter.lines.v, collapse=" ")) 
-chapter.words.l <- strsplit(chapter.words.v, "\\W") 
+dialogue.lines.v <- grep('"(.*?)"', chapter.lines.v, value = TRUE) # here is the grep again, pruning the chapter.lines vector into lines with dialogue
+chapter.words.v <- tolower(paste(dialogue.lines.v, collapse=" ")) 
+chapter.words.l <- strsplit(chapter.words.v, "\\W")
 chapter.word.v <- unlist(chapter.words.l)
 chapter.word.v <- chapter.word.v[which(chapter.word.v!="")] 
 chapter.freqs.t <- table(chapter.word.v) 
-chapter.raws.l[[chapter.title]] <- chapter.freqs.t 
+dialogue.chapter.raws.l[[chapter.title]] <- chapter.freqs.t 
 chapter.freqs.t.rel <- 100*(chapter.freqs.t/sum(chapter.freqs.t)) 
-chapter.freqs.l[[chapter.title]] <- chapter.freqs.t.rel
+dialogue.chapter.freqs.l[[chapter.title]] <- chapter.freqs.t.rel
     } 
 }
 
-chapter.freqs.l[1:10]
+dialogue.chapter.freqs.l[1:3]
 ```
 
 ## Part I: Using TidyText to 'read' all of Livy
