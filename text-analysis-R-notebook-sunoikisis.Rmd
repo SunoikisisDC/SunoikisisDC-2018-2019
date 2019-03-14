@@ -230,7 +230,7 @@ length(dickens.words.v[which(dickens.words.v=="father")])
 Or produce a list of all unique words.
 
 ```{r}
-unique(sort(dickens.words.v, decreasing = FALSE))
+unique(sort(dickens.words.v, decreasing = FALSE))[1:50]
 ```
 
 Here we find another problem: we find in our unique word list some odd non-words such as "0037m." We should strip those out.
@@ -314,10 +314,14 @@ We will not have time to go into details regarding these operations, but it is i
 Now, using what we know about regular expressions and flow control, let's have look at a for() loop that Matthew Jockers uses in Chapter 4 of his *Text Analysis for Students of Literature*. It's a fairly complicated but useful way of breaking up a novel text into chapters for comparative analysis. Let's return to Dickens. 
 
 ```{r}
-text.v <- scan("great-expectations.txt", what="character", sep="\n", encoding = "UTF-8") 
-start.v <- which(text.v == "Chapter I")
-end.v <- which(text.v == "THE END")
-novel.lines.v <- text.v[start.v:end.v]
+text.v <- scan("great-expectations.txt", what="character", sep="\n", encoding = "UTF-8")
+text2.v <- gsub("\\d+[a-z]*", "", text.v)
+not.blanks.v <- which(text2.v!="")
+clean.text.v <- text2.v[not.blanks.v]
+
+start.v <- which(clean.text.v == "Chapter I")
+end.v <- which(clean.text.v == "THE END")
+novel.lines.v <- clean.text.v[start.v:end.v]
 chap.positions.v <- grep("^Chapter \\w", novel.lines.v)
 
 novel.lines.v[chap.positions.v]
@@ -341,6 +345,10 @@ chapter.freqs.t.rel <- 100*(chapter.freqs.t/sum(chapter.freqs.t))
 chapter.freqs.l[[chapter.title]] <- chapter.freqs.t.rel
     } 
 }
+
+chapter.freqs.l[1]
+
+length(chapter.freqs.l)[1]
 ```
 
 Suppose I wanted to get all relative frequencies of the word "father" in each chapter.
@@ -364,7 +372,7 @@ which.min(father.freqs)
 Create a vector that confines your results to only the paragraphs with dialogue.
 
 ```{r}
-dialogue.v <- grep('"(.*?)"', novel.lines.v) # grep is another regex function
+dialogue.v <- grep('("([^"]|"")*")', novel.lines.v) # grep is another regex function
 
 novel.lines.v[dialogue.v][1:20] # check your work by finding all the dialogue lines in novel.lines.v
 ```
@@ -395,7 +403,7 @@ dialogue.chapter.freqs.l[[chapter.title]] <- chapter.freqs.t.rel
     } 
 }
 
-dialogue.chapter.freqs.l[1:3]
+dialogue.chapter.freqs.l[1]
 ```
 
 ## Part I: Using TidyText to 'read' all of Livy
@@ -410,11 +418,11 @@ setwd("~/Desktop")
 
 We did this to situate ourselves correctly within the filing system: we set our working directory to a reasonable place, the Desktop.
 
-Note that the squiggly line (~) tells the system to return to the root (or home) directory, and your Desktop should be the next step (/) from the root.
+Note that the squiggly line (~) tells the system to return to the root (or home) directory, and your Desktop should be the next step (/) from the root. In Windows you would need to type out the file path, so something like `C:\Users\[username]\Desktop`.
 
 Next we load the necessary libraries for these lessons. **Note**: If you get error messages, you will need to install the libraries by navigating to the "Packages" tab on the right-side panel of RStudio. Then click "Install," enter the name of the package, and install it.
 
-```{r warning = FALSE}
+```{r message=FALSE}
 library(tidytext)
 library(dplyr)
 library(stringr)
@@ -424,6 +432,39 @@ library(tidyr)
 library(ggplot2)
 library(gutenbergr)
 ```
+
+Before going into more details, I will briefly explain the 'tidy' approach to data that will be used in the following. The tidy approach assumes three principles regarding data structure:^[For more on this, see Hadley Wickham's “Tidy Data,” *Journal of Statistical Software* 59 (2014): 1–23. https://doi.org/10.18637/jss.v059.i10.]
+
+- Each variable is a column
+- Each observation is a row
+- Each type of observational unit is a table
+
+What results is a **table with one-token-per-row**. (Recall that a token is any meaningful unit of text: usually it is a word, but it can also be an n-gram, sentence, or even a root of a word.)
+
+```{r}
+pound_poem <- c("The apparition of these faces in the crowd;", "Petals on a wet, black bough.")
+
+pound_poem
+```
+
+Here we have created a character vector like we did before: the vector consists of two strings of text. In order to transform this into tidy format, we need to transform it into a data frame (here called a 'tibble', a type of data frame in R that is more convenient for text-based analysis).
+
+```{r}
+pound_poem_df <- tibble(line = 1:2, text = pound_poem)
+
+pound_poem_df
+```
+
+While better, this format is still not useful for tidy text analysis because we still need each word to be individually accounted for. To accomplish this act of tokenization, use the `unnest_tokens` function.
+
+```{r}
+pound_poem_df %>% unnest_tokens(word, text)
+# the unnest_tokens functions requires two arguments: the output column name (word), and the input column that the text comes from (text)
+```
+
+Notice how each word is in its own row, but also that its original line number is still intact. 
+
+**Using the `gutenbergr`package with tidytext:**
 
 By running the gutenberg_authors function, you can see the file format of the names.
 
@@ -440,7 +481,7 @@ gutenberg_works(str_detect(author, "Livy"))$title
 
 Did you notice anything wrong with this? The first result duplicates some of the content of the fourth, so we should not use that first text id. Remember, the first rule of scholarship is TRUST NO ONE. In computing, never trust your data. So we'll narrow the ingestion of the gutenberg ids to start with the second result.
 
-```{r warning=FALSE}
+```{r message=FALSE}
 # creates a variable that takes all the gutenberg ids of 
 ids <- gutenberg_works(str_detect(author, "Livy"))$gutenberg_id[2:5]
 
@@ -639,7 +680,7 @@ frequency <- bind_rows(mutate(tidy_livy, author = "Livy"),
   gather(author, proportion, `Livy`:`Herodotus`)
 ```
 
-```{r warning = FALSE}
+```{r message=FALSE}
 library(scales)
 ggplot(frequency, aes(x = proportion, y = `Edward Gibbon`, color = abs(`Edward Gibbon` - proportion))) +
   geom_abline(color = "gray40", lty = 2) +
@@ -779,7 +820,7 @@ summary(bing_word_counts)
 
 Another way to re-orient the sentiment results is to create a word cloud. Sometimes these can be useful for assessing the total weight of positivity or negativity in a corpus.
 
-```{r}
+```{r message=FALSE}
 library(wordcloud)
 library(reshape2)
 
@@ -796,7 +837,7 @@ livy_words %>%
 
 As you can see, the cloud displays the overall negativity that the line graph above suggested. Let's see how that compares to Herodotus.
 
-```{r}
+```{r message=FALSE}
 library(wordcloud)
 library(reshape2)
 
