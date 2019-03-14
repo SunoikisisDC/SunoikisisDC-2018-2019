@@ -1,0 +1,247 @@
+---
+title: "Introduction to stylometry in R with the package ‘stylo’ "
+author: Maciej Eder (Polish Academy of Sciences, Krakow)
+output:
+  html_notebook:
+    #theme: united
+    toc: yes
+---
+
+
+
+
+
+
+## Introduction
+
+Computational stylistics, or applying statistical methods to trace stylistic differences between (literary) texts, is usually associated with the question of authorship attribution. It relies on the assumption that each author has his/her own distinct lexical profile, e.g. reflected in idiosyncrasies of word frequencies. Effective as they are, however, authorship attribution methods can be further extended to solve more general questions of genre, chronology, intertextuality, textual coherence, and so forth. 
+
+This concise notebook introduces basic functionalities of the package `stylo`, which is an library written in the R programming language, aimed at performing stylometric tests with no prior expertise in programming. 
+
+
+
+
+
+## Documentation
+
+The package [‘stylo’](https://github.com/computationalstylistics/stylo) has been developed as an ad-hoc initiative that later evolved to a fully functional R package. Its original aim was to support experiments conducted at the [Computational Stylistics Group](https://computationalstylistics.github.io/). It is suggested to visit the Group’s page [Projects](https://computationalstylistics.github.io/projects/), in order to get a general impression of some possible applications of stylometry.
+
+The package ‘stylo’ in its current form offers a considerable number of functionalities. It might be beneficial to read some documentation before starting one’s own experiments:
+
+* for (real) beginners: a crush introduction in the form of a [slideshow](https://computationalstylistics.github.io/stylo_nutshell/)
+* for (sort of) beginners: a concise [HOWTO](https://sites.google.com/site/computationalstylistics/stylo/stylo_howto.pdf)
+* for advanced users: a paper in [R Journal](https://journal.r-project.org/archive/2016/RJ-2016-007/RJ-2016-007.pdf)
+* full documentation at [CRAN](https://cran.r-project.org/web/packages/stylo/stylo.pdf)
+* source files of the package on [GitHub](https://github.com/computationalstylistics/stylo)
+
+
+
+
+
+
+## Installing `stylo`
+
+* run R
+* type `install.packages("stylo")`
+* pick your R server
+* click `OK`
+* done!
+
+
+
+
+## Installation issues
+
+**NOTE** (Mac OS users): the package `stylo` requires X11 support being installed. To quote "R for Mac OS X FAQ" (http://cran.r-project.org/bin/macosx/RMacOSX-FAQ.html): “Each binary distribution of R available through CRAN is build to use the X11 implementation of Tcl/Tk. Of course a X windows server has to be started first: this should happen automatically on OS X, provided it has been installed (it needs a separate install on Mountain Lion or later). The first time things are done in the X server there can be a long delay whilst a font cache is constructed; starting the server can take several seconds.”
+
+You might also run into encoding errors when you start up R (e.g. “WARNING: You're using a non-UTF8 locale” etc.). In that case, you should close R, open a new window in Applications > Terminal and execute the following line:
+
+```
+defaults write org.R-project.R force.LANG en_US.UTF-8
+```
+
+Next, close the Terminal and start up R again.
+
+**ANOTHER NOTE** A slightly different workaround of the above problem (Mac users again):
+
+* Install XQuartz, restart Mac
+* Open Terminal, type: `sudo ln -s /opt/X11 /usr/X11`
+* Run XQuartz
+* Run R, type: `system('defaults write org.R-project.R force.LANG en_US.UTF-8')`
+
+
+**YET ANOTHER NOTE** On MacOS Mojave one usually faces the problem of not properly recognized tcltk support. Open your terminal and type the following command:
+
+`xcode-select --install`
+
+This will download and install xcode developer tools and fix the problem. The problem is that one needs to explicitly agree to the license agreement.
+
+
+
+
+## Some basic R functions
+
+* to activate a package: `library(stylo)`
+* to set working directory: `setwd("path/to/my/stuff")`
+* to find your current location: `getwd()`
+* to list files in your current location: `list.files()`
+* to get help: `help(<function>)`, e.g. `help(stylo)`
+* to quit R: `q()`
+
+
+
+## The data
+
+While the input data for stylometric analyses in R can be used in many different formats, including the already-existing tables of word frequencies, the most convenient way of processing the texts is to load them directly from the harddrive. To do so, you should create a folder which will become your main place for both data and the results (it is referred to as the ‘working directory’). The name of the folder will appear on the final plots. Then you create a subfolder `corpus` (for the sake of convenience, it is advised to keep exactly that name) which will contain actual text files. Texts used in the example below can be retrieved from [here](https://github.com/computationalstylistics/NT_Vulgate). The file structure will usually look as follows:
+
+    NT_Vulgate
+        corpus
+            act_1.txt
+            act_2.txt
+            act_3.txt
+            ap_1.txt
+            ap_2.txt
+            cor_i_1.txt
+            cor_i_2.txt
+            cor_ii.txt
+            iac.txt
+            io_1.txt
+            io_2.txt
+            io_3.txt
+            luc_1.txt
+            luc_2.txt
+            luc_3.txt
+            mat_1.txt
+            mat_2.txt
+            mat_3.txt
+            mr_1.txt
+            mr_2.txt
+            rom_1.txt
+            rom_2.txt
+
+
+Mind the file names: metadata of the input texts are expected to be embedded here. The file name convention assumes that any string of characters followed by an underscore becomes a class identifier (case sensitive). In final scatterplots and dendrograms, colors of the samples are assigned according to this convention; common file extensions are dropped. E.g. in the above example, the texts are colored according to authorial classes.
+
+
+
+## The main function: `stylo()`
+
+* It computes distances (differences) between texts, ...
+* ... represented as rows of frequencies of most frequent words.
+* Then it plots graphs of those distances:
+    * **Cluster Analysis** plots (dendrograms)
+    * **Multidimensional Scaling** scatterplots
+    * **Principal Components Analysis** scatterplots
+    * **Bootstrap Consensus Trees** plots (for multiple parameter settings)
+    * **Bootstrap Consensus Networks** (other software will be needed to take over)
+* The plots can be both displayed on screen and saved to a file (e.g. PNG).
+
+
+
+
+
+
+
+
+## Using the main function
+
+First, we have to activate the library ‘stylo’ so that its functions are visible to the user:
+
+```{r}
+library(stylo)
+```
+
+Now, we need to tell R where the text files are stored, via the function `setwd()`. Please remember that the very location of your corpus will probably be different. Consequently, the path indicated as the argument of the function `setwd()` should be adjusted accordingly:
+
+```{r eval = FALSE}
+setwd("/Users/m/Desktop/NT_Vulgate/")
+
+# this funcion lists the files in the working directory:
+list.files()
+```
+
+If the folder containing the text files (usually named `corpus`) has been listed, we’re all set. Now, launch the main function of the package:
+
+```{r eval = FALSE}
+stylo()
+```
+
+A simple GUI should appear:
+
+![ ](https://computationalstylistics.github.io/assets/img/stylo-gui_tab1.png)
+
+
+It is suggested to simply click `OK` for the first time, to see some (preliminary) results in no time. When the default settings are used, the output is a hierarchical clustering dendrogram based on 100 most frequent words, Classic Delta distance measure, and Ward clustering algorithm. The final dendrogram might look as follows (here, the plot represents similarities between a few 13th-century Latin prose text):
+
+![ ](https://computationalstylistics.github.io/assets/img/gallus_clustering.png)
+
+The current tutorial is way too concise to cover the available options and supported stylometric methods. The users are encouraged to explore the functionalities available via GUI. They include fiddling with different distance measures, language features, and so on.
+
+Sooner or later, one feels bold enough to try using the function `stylo()` in command line mode (i.e. without GUI). In such a case, all required parameters should be passed as arguments of the function, as in the example below. It is also possible to use some already-existing word frequencies. Mind the following code:
+
+```{r message = FALSE}
+# this function activates an already-existing dataset:
+data(lee)
+# this funcion launches the analysis with pre-defined parameters:
+stylo(frequencies = lee, analysis.type = "BCT", 
+    mfw.min = 100, mfw.max = 3000, custom.graph.title = "Harper Lee",
+    write.png.file = TRUE, gui = FALSE)
+```
+
+An attractive and relatively new stylometric method that is provided by the package ‘stylo’ is referred to as [“Bootstrap Consensus Networds”](https://computationalstylistics.github.io/projects/bootstrap-networks/). The already-introduced function `stylo()` can produce a list of network connections that can be further visualized with external tools such as Gephi. However, one can get a simple bootstrap consensus network in no time by invoking the following function:
+
+```{r eval = FALSE}
+stylo.network()
+```
+
+The function computes the similarities between analyzed texts and then invokes a web browser, in order to present an interactive network on screen. It is rather difficult to save such a network on harddrive, but it gives an insight into the results in no time.
+
+A reproducible example, using a dataset already activated above, might be as follows:
+
+```{r message = FALSE}
+stylo.network(frequencies = lee, gui = FALSE)
+```
+
+
+
+
+## Other methods 
+
+The package ‘stylo’ offers much more than its main function `stylo()`. In particular, there is a function that allows for performing supervised machine-learning analyses, including Burrows’s Delta, Support Vector Machines, and so forth:
+
+```{r eval = FALSE}
+classify()
+```
+
+This function has at least as many parameters as the function `stylo()`, and it assumes some elementary knowledge in machine learning. Please refer to the links at the bottom of this page for some details.
+
+Another that might be useful is aimed at performing contrastive analyses of two subcorpora:
+
+```{r eval = FALSE}
+oppose()
+```
+
+A method that attracted some share of interest, is the Rolling Stylometry technique. It slices an input text into equal-sized blocks and then compares them sequentially with reference data. Consequently, it allows for detecting local idiosyncrasies in (longer) texts. The method is introduced in [this blog post](https://computationalstylistics.github.io/blog/rolling_stylometry), and  [here](https://computationalstylistics.github.io/projects/rolling-stylometry/). 
+
+```{r eval = FALSE}
+rolling.classify()
+```
+
+![ ](https://computationalstylistics.github.io/assets/img/rolling-svm_100-features_5000-per-slice.png)
+
+
+
+
+## Advanced topics
+
+
+* [Authorship verification with the package 'stylo'](https://computationalstylistics.github.io/blog/imposters)
+* [Cross-validation using the function `classify()`](https://computationalstylistics.github.io/blog/cross-validation)
+* [Custom distance measures](https://computationalstylistics.github.io/blog/custom_distances)
+* [Using ‘Stylo’ with languages other than English](https://computationalstylistics.github.io/blog/stylo_and_languages/)
+
+
+
+###############
+
+ 
