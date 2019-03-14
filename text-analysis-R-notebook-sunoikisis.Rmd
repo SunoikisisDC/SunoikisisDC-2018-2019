@@ -459,10 +459,10 @@ While better, this format is still not useful for tidy text analysis because we 
 
 ```{r}
 pound_poem_df %>% unnest_tokens(word, text)
-# the unnest_tokens functions requires two arguments: the output column name (word), and the input column that the text comes from (text)
+# the unnest_tokens function requires two arguments: the output column name (word), and the input column that the text comes from (text)
 ```
 
-Notice how each word is in its own row, but also that its original line number is still intact. 
+Notice how each word is in its own row, but also that its original line number is still intact. That is the basic logic of tidy text analysis. Now let's apply this to a larger data set. 
 
 **Using the `gutenbergr`package with tidytext:**
 
