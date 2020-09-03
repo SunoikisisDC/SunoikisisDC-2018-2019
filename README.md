@@ -4,6 +4,9 @@
 ***
 ### SunoikisisDC 2018-2019 Courses (Fall 2018 and Spring and Summer  2019)
 * [SunoikisisDC 2018-2019 Wiki](https://github.com/SunoikisisDC/SunoikisisDC-2018-2019/wiki) (syllabi and class outlines)
+  * [Fall 2018: Sunoikisis DCH](https://github.com/SunoikisisDC/SunoikisisDC-2018-2019/wiki/Fall-2018:-DCH) (chaired by Valeria Vitale)
+  * [Spring 2019: Sunoikisis Digital Classics](https://github.com/SunoikisisDC/SunoikisisDC-2018-2019/wiki/Spring-2019:-DC) (chaired by Gabriel Bodard and Marja Vierros)
+  * [Summer 2019: Sunoikisis Digital Classics](https://github.com/SunoikisisDC/SunoikisisDC-2018-2019/wiki/Summer-2019:-DC) (chaired by Monica Berti)
 
 ***
 #### License
